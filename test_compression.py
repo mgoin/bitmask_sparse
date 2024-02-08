@@ -51,3 +51,6 @@ def test_size_invariance(implementation, sparsity, size):
     assert (
         decompressed_tensor.shape == tensor.shape
     ), "Decompressed tensor should retain the original shape."
+
+    # Assert that the original and decompressed tensors are identical
+    torch.testing.assert_allclose(tensor, decompressed_tensor)
