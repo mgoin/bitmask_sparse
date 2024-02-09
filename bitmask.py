@@ -8,6 +8,11 @@ bitmask_lib = load(
 )
 
 
+__all__ = [
+    "BitmaskTensor",
+]
+
+
 class BitmaskTensor:
     def __init__(self, tensor: torch.Tensor):
         self.shape = tensor.shape
