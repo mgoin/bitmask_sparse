@@ -20,19 +20,24 @@ std::vector<torch::Tensor> bitmask_sparse_compression(torch::Tensor input) {
   auto packed_size = (num_elements + 7) / 8; 
   auto bitmask_packed = torch::zeros({packed_size}, options);
 
-// Simple but inefficient loop where we read/write the current byte for every element
-//   for (int64_t i = 0; i < num_elements; ++i) {
-//     if (bitmask_unpacked[i].item<uint8_t>()) {
-//       int64_t byte_index = i / 8;
-//       int64_t bit_index = i % 8;
-//       // Perform the operation on a retrieved scalar value
-//       auto current_value = bitmask_packed[byte_index].item<uint8_t>();
-//       current_value |= (1 << bit_index);
-//       // Assign the modified value back to the tensor
-//       bitmask_packed[byte_index] = current_value;
-//     }
-//   }
+  //
+  // Simple but inefficient loop where we read/write the current byte for every element
+  //
+  // for (int64_t i = 0; i < num_elements; ++i) {
+  //   if (bitmask_unpacked[i].item<uint8_t>()) {
+  //     int64_t byte_index = i / 8;
+  //     int64_t bit_index = i % 8;
+  //     // Perform the operation on a retrieved scalar value
+  //     auto current_value = bitmask_packed[byte_index].item<uint8_t>();
+  //     current_value |= (1 << bit_index);
+  //     // Assign the modified value back to the tensor
+  //     bitmask_packed[byte_index] = current_value;
+  //   }
+  // }
 
+  //
+  // Much more effiecient but unfortunately tricky loop
+  //
   uint8_t current_value = 0; // To accumulate bitmask for current byte
   int64_t last_byte_index = -1; // To track the last byte index processed
 
@@ -65,27 +70,6 @@ std::vector<torch::Tensor> bitmask_sparse_compression(torch::Tensor input) {
   return {values, bitmask_packed};
 }
 
-torch::Tensor unpack_bitmask_to_bits(torch::Tensor bitmask_packed,
-                                     int64_t original_size) {
-  auto options = torch::TensorOptions()
-                     .dtype(torch::kUInt8)
-                     .device(bitmask_packed.device());
-  auto unpacked_bits = torch::zeros(original_size, options);
-
-  auto bitmask_packed_accessor = bitmask_packed.accessor<uint8_t, 1>();
-  auto unpacked_bits_accessor = unpacked_bits.accessor<uint8_t, 1>();
-
-  for (int64_t i = 0; i < bitmask_packed.size(0); ++i) {
-    for (int bit = 0; bit < 8; ++bit) {
-      if (i * 8 + bit < original_size) {
-        unpacked_bits_accessor[i * 8 + bit] =
-            (bitmask_packed_accessor[i] >> bit) & 1;
-      }
-    }
-  }
-
-  return unpacked_bits;
-}
 
 torch::Tensor decompress_bitmask_sparse(torch::Tensor values,
                                         torch::Tensor bitmask_packed,
@@ -95,13 +79,13 @@ torch::Tensor decompress_bitmask_sparse(torch::Tensor values,
     original_size *= dim;
   }
 
-  auto unpacked_bits = unpack_bitmask_to_bits(bitmask_packed, original_size);
+  auto bitmask_packed_accessor = bitmask_packed.accessor<uint8_t, 1>();
   auto decompressed_tensor = torch::zeros(original_size, values.options());
 
   int64_t values_idx = 0;
-  auto unpacked_bits_accessor = unpacked_bits.accessor<uint8_t, 1>();
   for (int64_t i = 0; i < original_size; ++i) {
-    if (unpacked_bits_accessor[i] == 1) {
+    int bit = i % 8;
+    if ((bitmask_packed_accessor[i / 8] >> bit) & 1) {
       decompressed_tensor[i] = values[values_idx++];
     }
   }

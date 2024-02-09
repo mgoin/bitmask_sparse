@@ -1,5 +1,7 @@
 import torch
 
+from torch.utils.cpp_extension import load
+
 
 def pack_bits_to_byte(bitmask):
     """
@@ -65,7 +67,6 @@ print(
     ["{0:b}".format(b.item()).zfill(8) for b in bitmask_packed],
 )
 
-from torch.utils.cpp_extension import load
 
 bitmask_lib = load(
     name="bitmask_lib",

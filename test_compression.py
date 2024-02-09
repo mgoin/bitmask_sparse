@@ -16,7 +16,7 @@ def test_compress_decompress_identity(implementation):
     decompressed_tensor = compressed_tensor.to_dense()
 
     # Assert that the original and decompressed tensors are identical
-    torch.testing.assert_allclose(decompressed_tensor, tensor)
+    torch.testing.assert_close(tensor, decompressed_tensor)
 
 
 @pytest.mark.parametrize("implementation", [NaiveBitmaskTensor, BitmaskTensor, TritonBitmaskTensor])
@@ -39,19 +39,18 @@ def test_compress_efficiency(implementation):
 
 @pytest.mark.parametrize("implementation", [NaiveBitmaskTensor, BitmaskTensor, TritonBitmaskTensor])
 @pytest.mark.parametrize("sparsity", [0.2, 0.5])
-@pytest.mark.parametrize("size", [(128, 128), (128, 128)])
+@pytest.mark.parametrize("size", [(1, 16), (10, 10), (15, 15), (100, 100)])
 def test_size_invariance(implementation, sparsity, size):
     # Create a random tensor of specified size
     tensor = torch.randn(size) < sparsity
 
-    # Compress and then decompress the tensor
+    # Compress the tensor
     compressed_tensor = implementation.from_dense(tensor)
-    decompressed_tensor = compressed_tensor.to_dense()
-
-    # Assert that the decompressed tensor has the same shape as the original
-    assert (
-        decompressed_tensor.shape == tensor.shape
-    ), "Decompressed tensor should retain the original shape."
 
     # Assert that the original and decompressed tensors are identical
-    torch.testing.assert_allclose(decompressed_tensor, tensor)
+    torch.testing.assert_close(tensor, compressed_tensor.to_dense())
+
+    # Save compressed tensor, reload, and assert they are identical
+    compressed_tensor.save("temp.pt")
+    compressed_tensor = implementation.load("temp.pt")
+    torch.testing.assert_close(tensor, compressed_tensor.to_dense())
