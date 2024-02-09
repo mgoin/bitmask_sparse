@@ -1,10 +1,13 @@
 import torch
+import os
 
 from torch.utils.cpp_extension import load
 
+SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
+
 bitmask_lib = load(
     name="bitmask_lib",
-    sources=["bitmask_sparse_extension.cpp"],
+    sources=[f"{SCRIPT_DIR}/bitmask_sparse_extension.cpp"],
 )
 
 

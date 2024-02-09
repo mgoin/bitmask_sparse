@@ -1,7 +1,6 @@
 import torch
 import triton
 import triton.language as tl
-from naive_bitmask import NaiveBitmaskTensor
 
 __all__ = [
     "TritonBitmaskTensor",

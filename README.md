@@ -1,9 +1,14 @@
-# bitmask_sparse
+# torch_bitmask
+
+### Install
+```
+pip install -e .
+```
 
 ### Usage
 ```python
 import torch
-from bitmask import BitmaskTensor
+from torch_bitmask import BitmaskTensor
 
 dense_tensor = torch.randn([50, 50])
 bitmask_tensor = BitmaskTensor.from_dense(dense_tensor)
@@ -38,7 +43,7 @@ Decompress TritonBitmaskTensor: 0.20679421799999886
 
 ### Tests
 ```bash
-python -m pytest test_compression.py -v 
+python -m pytest tests -v 
 ================================================== test session starts ===================================================
 platform linux -- Python 3.10.12, pytest-8.0.0, pluggy-1.4.0 -- /home/mgoin/venvs/nm/bin/python
 cachedir: .pytest_cache
@@ -88,7 +93,7 @@ test_compression.py::test_size_invariance[size4-0.5-TritonBitmaskTensor] PASSED 
 
 ### Smoke test
 ```bash
-python smoke_test.py
+python tests/smoke_test.py
 Values: tensor([1., 2., 5., 3., 4., 5.])
 Bitmask Unpacked: tensor([1, 0, 1, 1, 1, 0, 1, 0, 1], dtype=torch.uint8)
 Bitmask Packed Binary: ['01011101', '00000001']
