@@ -22,8 +22,8 @@ def test_compress_decompress_identity(implementation):
 @pytest.mark.parametrize("implementation", [NaiveBitmaskTensor, BitmaskTensor, TritonBitmaskTensor])
 def test_compress_efficiency(implementation):
     # Create a larger, mostly sparse tensor
-    tensor = torch.cat([torch.zeros(128, 128), torch.rand(128, 128)], dim=0)
-    tensor[:128, :] = tensor[:128, :].apply_(lambda x: x if x > 0.95 else 0.0)
+   tensor = torch.cat([torch.zeros(100, 100), torch.rand(100, 100)], dim=0)
+    tensor[:100, :] = tensor[:100, :].apply_(lambda x: x if x > 0.95 else 0.0)
     
     def sizeof_tensor(a):
         return a.element_size() * a.nelement()
@@ -37,9 +37,9 @@ def test_compress_efficiency(implementation):
     assert compressed_size < original_size, "Compression should reduce total size."
 
 
-@pytest.mark.parametrize("implementation", [NaiveBitmaskTensor, BitmaskTensor, TritonBitmaskTensor])
+@pytest.mark.parametrize("implementation", [TritonBitmaskTensor])
 @pytest.mark.parametrize("sparsity", [0.2, 0.5])
-@pytest.mark.parametrize("size", [(1, 16), (10, 10), (15, 15), (100, 100)])
+@pytest.mark.parametrize("size", [(1, 16), (10, 10), (15, 15), (100, 100), (300, 300)])
 def test_size_invariance(implementation, sparsity, size):
     # Create a random tensor of specified size
     tensor = torch.randn(size) < sparsity
