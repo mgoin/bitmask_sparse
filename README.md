@@ -12,6 +12,19 @@ decompressed_tensor = bitmask_tensor.to_dense()
 assert torch.equal(dense_tensor, decompressed_tensor)
 ```
 
+### Compression Demo
+```bash
+python demo.py
+Generating a tensor of size=[4096, 4096] and precision=torch.float16 with sparsity=0.5
+
+dense_tensor: 32.0000 MB
+
+bitmask_tensor: 18.0229 MB
+  values: 15.9916 MB
+  bitmasks: 2.0000 MB
+  row_offsets: 0.0312 MB
+```
+
 ### Benchmark
 ```bash
 python benchmark.py
