@@ -36,7 +36,7 @@ std::vector<torch::Tensor> bitmask_sparse_compression(torch::Tensor input) {
   // }
 
   //
-  // Much more effiecient but unfortunately tricky loop
+  // Much more efficient but unfortunately tricky loop
   //
   uint8_t current_value = 0; // To accumulate bitmask for current byte
   int64_t last_byte_index = -1; // To track the last byte index processed

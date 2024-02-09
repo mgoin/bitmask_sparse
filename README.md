@@ -1,6 +1,6 @@
 # bitmask_sparse
 
-Usage:
+### Usage
 ```python
 import torch
 from bitmask import BitmaskTensor
@@ -12,9 +12,70 @@ decompressed_tensor = bitmask_tensor.to_dense()
 assert torch.equal(dense_tensor, decompressed_tensor)
 ```
 
-Smoke test:
+### Benchmark
 ```bash
-python smoke_test.py 
+python benchmark.py
+SHAPE = [1024, 1024]
+Create Regular Tensor: 0.040321263999999246
+Create BitmaskTensor: 5.361965241
+Decompress BitmaskTensor: 15.432242420999998
+Create TritonBitmaskTensor: 0.5133457880000023
+Decompress TritonBitmaskTensor: 0.20679421799999886
+```
+
+### Tests
+```bash
+python -m pytest test_compression.py -v 
+================================================== test session starts ===================================================
+platform linux -- Python 3.10.12, pytest-8.0.0, pluggy-1.4.0 -- /home/mgoin/venvs/nm/bin/python
+cachedir: .pytest_cache
+rootdir: /home/mgoin/code/bitmask_sparse
+plugins: anyio-3.7.1
+collected 36 items                                                                                                       
+
+test_compression.py::test_compress_decompress_identity[NaiveBitmaskTensor] PASSED                                  [  2%]
+test_compression.py::test_compress_decompress_identity[BitmaskTensor] PASSED                                       [  5%]
+test_compression.py::test_compress_decompress_identity[TritonBitmaskTensor] PASSED                                 [  8%]
+test_compression.py::test_compress_efficiency[NaiveBitmaskTensor] PASSED                                           [ 11%]
+test_compression.py::test_compress_efficiency[BitmaskTensor] PASSED                                                [ 13%]
+test_compression.py::test_compress_efficiency[TritonBitmaskTensor] PASSED                                          [ 16%]
+test_compression.py::test_size_invariance[size0-0.2-NaiveBitmaskTensor] PASSED                                     [ 19%]
+test_compression.py::test_size_invariance[size0-0.2-BitmaskTensor] PASSED                                          [ 22%]
+test_compression.py::test_size_invariance[size0-0.2-TritonBitmaskTensor] PASSED                                    [ 25%]
+test_compression.py::test_size_invariance[size0-0.5-NaiveBitmaskTensor] PASSED                                     [ 27%]
+test_compression.py::test_size_invariance[size0-0.5-BitmaskTensor] PASSED                                          [ 30%]
+test_compression.py::test_size_invariance[size0-0.5-TritonBitmaskTensor] PASSED                                    [ 33%]
+test_compression.py::test_size_invariance[size1-0.2-NaiveBitmaskTensor] PASSED                                     [ 36%]
+test_compression.py::test_size_invariance[size1-0.2-BitmaskTensor] PASSED                                          [ 38%]
+test_compression.py::test_size_invariance[size1-0.2-TritonBitmaskTensor] PASSED                                    [ 41%]
+test_compression.py::test_size_invariance[size1-0.5-NaiveBitmaskTensor] PASSED                                     [ 44%]
+test_compression.py::test_size_invariance[size1-0.5-BitmaskTensor] PASSED                                          [ 47%]
+test_compression.py::test_size_invariance[size1-0.5-TritonBitmaskTensor] PASSED                                    [ 50%]
+test_compression.py::test_size_invariance[size2-0.2-NaiveBitmaskTensor] PASSED                                     [ 52%]
+test_compression.py::test_size_invariance[size2-0.2-BitmaskTensor] PASSED                                          [ 55%]
+test_compression.py::test_size_invariance[size2-0.2-TritonBitmaskTensor] PASSED                                    [ 58%]
+test_compression.py::test_size_invariance[size2-0.5-NaiveBitmaskTensor] PASSED                                     [ 61%]
+test_compression.py::test_size_invariance[size2-0.5-BitmaskTensor] PASSED                                          [ 63%]
+test_compression.py::test_size_invariance[size2-0.5-TritonBitmaskTensor] PASSED                                    [ 66%]
+test_compression.py::test_size_invariance[size3-0.2-NaiveBitmaskTensor] PASSED                                     [ 69%]
+test_compression.py::test_size_invariance[size3-0.2-BitmaskTensor] PASSED                                          [ 72%]
+test_compression.py::test_size_invariance[size3-0.2-TritonBitmaskTensor] PASSED                                    [ 75%]
+test_compression.py::test_size_invariance[size3-0.5-NaiveBitmaskTensor] PASSED                                     [ 77%]
+test_compression.py::test_size_invariance[size3-0.5-BitmaskTensor] PASSED                                          [ 80%]
+test_compression.py::test_size_invariance[size3-0.5-TritonBitmaskTensor] PASSED                                    [ 83%]
+test_compression.py::test_size_invariance[size4-0.2-NaiveBitmaskTensor] PASSED                                     [ 86%]
+test_compression.py::test_size_invariance[size4-0.2-BitmaskTensor] PASSED                                          [ 88%]
+test_compression.py::test_size_invariance[size4-0.2-TritonBitmaskTensor] PASSED                                    [ 91%]
+test_compression.py::test_size_invariance[size4-0.5-NaiveBitmaskTensor] PASSED                                     [ 94%]
+test_compression.py::test_size_invariance[size4-0.5-BitmaskTensor] PASSED                                          [ 97%]
+test_compression.py::test_size_invariance[size4-0.5-TritonBitmaskTensor] PASSED                                    [100%]
+
+=================================================== 36 passed in 6.29s ===================================================
+```
+
+### Smoke test
+```bash
+python smoke_test.py
 Values: tensor([1., 2., 5., 3., 4., 5.])
 Bitmask Unpacked: tensor([1, 0, 1, 1, 1, 0, 1, 0, 1], dtype=torch.uint8)
 Bitmask Packed Binary: ['01011101', '00000001']
@@ -30,37 +91,4 @@ Decompressed Tensor:
  tensor([[1., 0., 2.],
         [5., 3., 0.],
         [4., 0., 5.]])
-```
-
-Actual unit tests:
-```bash
-python -m pytest test_compression.py -v 
-============================================================================= test session starts =============================================================================
-platform linux -- Python 3.10.12, pytest-7.4.2, pluggy-1.3.0 -- /home/mgoin/venvs/nm/bin/python
-cachedir: .pytest_cache
-rootdir: /home/mgoin/code/bitmask_sparse
-plugins: hydra-core-1.3.2, anyio-3.7.1
-collected 12 items                                                                                                                                                            
-
-test_compression.py::test_compress_decompress_identity[NaiveBitmaskTensor] PASSED                                                                                       [  8%]
-test_compression.py::test_compress_decompress_identity[BitmaskTensor] PASSED                                                                                            [ 16%]
-test_compression.py::test_compress_efficiency[NaiveBitmaskTensor] PASSED                                                                                                [ 25%]
-test_compression.py::test_compress_efficiency[BitmaskTensor] PASSED                                                                                                     [ 33%]
-test_compression.py::test_size_invariance[size0-0.2-NaiveBitmaskTensor] PASSED                                                                                          [ 41%]
-test_compression.py::test_size_invariance[size0-0.2-BitmaskTensor] PASSED                                                                                               [ 50%]
-test_compression.py::test_size_invariance[size0-0.5-NaiveBitmaskTensor] PASSED                                                                                          [ 58%]
-test_compression.py::test_size_invariance[size0-0.5-BitmaskTensor] PASSED                                                                                               [ 66%]
-test_compression.py::test_size_invariance[size1-0.2-NaiveBitmaskTensor] PASSED                                                                                          [ 75%]
-test_compression.py::test_size_invariance[size1-0.2-BitmaskTensor] PASSED                                                                                               [ 83%]
-test_compression.py::test_size_invariance[size1-0.5-NaiveBitmaskTensor] PASSED                                                                                          [ 91%]
-test_compression.py::test_size_invariance[size1-0.5-BitmaskTensor] PASSED                                                                                               [100%]
-
-============================================================================== warnings summary ===============================================================================
-test_compression.py::test_compress_decompress_identity[NaiveBitmaskTensor]
-test_compression.py::test_compress_decompress_identity[BitmaskTensor]
-  /home/mgoin/code/bitmask_sparse/test_compression.py:18: FutureWarning: `torch.testing.assert_allclose()` is deprecated since 1.12 and will be removed in a future release. Please use `torch.testing.assert_close()` instead. You can find detailed upgrade instructions in https://github.com/pytorch/pytorch/issues/61844.
-    torch.testing.assert_allclose(tensor, decompressed_tensor)
-
--- Docs: https://docs.pytest.org/en/stable/how-to/capture-warnings.html
-======================================================================= 12 passed, 2 warnings in 1.84s ========================================================================
 ```

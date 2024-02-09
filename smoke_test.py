@@ -47,7 +47,7 @@ def bitmask_sparse_compression(tensor):
     # Extract non-zero values
     values = flat_tensor[flat_tensor != 0]
 
-    # Create a bitmask where each bit represents whether the corresponding tensor element is non-zero
+    # Create a mask where each byte represents whether the corresponding tensor element is non-zero
     bitmask_unpacked = (flat_tensor != 0).to(torch.uint8)
 
     # Pack the bitmask to store 8 elements per byte

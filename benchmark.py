@@ -44,6 +44,7 @@ def decompress_trition_bitmask_tensor():
     bitmask_tensor = TritonBitmaskTensor.from_dense(dense_tensor)
     _ = bitmask_tensor.to_dense()
 
+
 # Benchmarking
 print(f"SHAPE = {SHAPE}")
 # print(
@@ -56,5 +57,11 @@ print(f"SHAPE = {SHAPE}")
 print("Create Regular Tensor:", timeit.timeit(create_regular_tensor, number=10))
 print("Create BitmaskTensor:", timeit.timeit(create_bitmask_tensor, number=10))
 print("Decompress BitmaskTensor:", timeit.timeit(decompress_bitmask_tensor, number=10))
-print("Create TritonBitmaskTensor:", timeit.timeit(create_trition_bitmask_tensor, number=10))
-print("Decompress TritonBitmaskTensor:", timeit.timeit(decompress_trition_bitmask_tensor, number=10))
+print(
+    "Create TritonBitmaskTensor:",
+    timeit.timeit(create_trition_bitmask_tensor, number=10),
+)
+print(
+    "Decompress TritonBitmaskTensor:",
+    timeit.timeit(decompress_trition_bitmask_tensor, number=10),
+)
