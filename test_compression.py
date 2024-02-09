@@ -1,5 +1,6 @@
 import pytest
 import torch
+import os
 
 from naive_bitmask import NaiveBitmaskTensor
 from bitmask import BitmaskTensor
@@ -57,6 +58,8 @@ def test_size_invariance(implementation, sparsity, size):
     torch.testing.assert_close(tensor, compressed_tensor.to_dense())
 
     # Save compressed tensor, reload, and assert they are identical
-    compressed_tensor.save("temp.pt")
-    compressed_tensor = implementation.load("temp.pt")
+    filename = "temp.pt"
+    compressed_tensor.save(filename)
+    compressed_tensor = implementation.load(filename)
     torch.testing.assert_close(tensor, compressed_tensor.to_dense())
+    os.remove(filename)
