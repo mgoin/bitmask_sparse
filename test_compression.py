@@ -37,7 +37,7 @@ def test_compress_efficiency(implementation):
     assert compressed_size < original_size, "Compression should reduce total size."
 
 
-@pytest.mark.parametrize("implementation", [TritonBitmaskTensor])
+@pytest.mark.parametrize("implementation", [NaiveBitmaskTensor, BitmaskTensor, TritonBitmaskTensor])
 @pytest.mark.parametrize("sparsity", [0.2, 0.5])
 @pytest.mark.parametrize("size", [(1, 16), (10, 10), (15, 15), (100, 100), (300, 300)])
 def test_size_invariance(implementation, sparsity, size):
