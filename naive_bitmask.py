@@ -22,6 +22,11 @@ class NaiveBitmaskTensor:
     def from_dense(tensor: torch.Tensor) -> "NaiveBitmaskTensor":
         return NaiveBitmaskTensor(tensor)
 
+    def curr_memory_size_bytes(self):
+        def sizeof_tensor(a):
+            return a.element_size() * a.nelement()
+        return sizeof_tensor(self.values) + sizeof_tensor(self.bitmask_packed)
+
     def save(self, filepath: str):
         torch.save(
             {
