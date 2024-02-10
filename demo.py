@@ -1,5 +1,5 @@
 import torch
-from torch_bitmask import TritonBitmaskTensor
+from torch_bitmask import NumpyBitmaskTensor as BitmaskTensor
 
 shape = [4096, 4096]
 dtype = torch.float16
@@ -12,7 +12,7 @@ print(
 mask = (dense_tensor.abs() < (1 - sparsity)).int()
 sparse_tensor = dense_tensor * mask
 
-bitmask_tensor = TritonBitmaskTensor.from_dense(sparse_tensor)
+bitmask_tensor = BitmaskTensor.from_dense(sparse_tensor)
 
 
 def sizeof_tensor(a):
@@ -22,7 +22,7 @@ def sizeof_tensor(a):
 print(f"dense_tensor: {sizeof_tensor(dense_tensor) / 1024 / 1024:.4f} MB\n")
 print(f"bitmask_tensor: {bitmask_tensor.curr_memory_size_bytes() / 1024 / 1024:.4f} MB")
 print(f"  values: {sizeof_tensor(bitmask_tensor.values) / 1024 / 1024:.4f} MB")
-print(f"  bitmasks: {sizeof_tensor(bitmask_tensor.bitmasks) / 1024 / 1024:.4f} MB")
+print(f"  bitmask: {sizeof_tensor(bitmask_tensor.bitmask) / 1024 / 1024:.4f} MB")
 print(
     f"  row_offsets: {sizeof_tensor(bitmask_tensor.row_offsets) / 1024 / 1024:.4f} MB"
 )

@@ -5,7 +5,7 @@ import torch
 from torch_bitmask import (
     NaiveBitmaskTensor,
     TritonBitmaskTensor,
-    BitmaskTensor,
+    CppBitmaskTensor,
     NumpyBitmaskTensor,
 )
 

@@ -4,14 +4,14 @@ import os
 
 from torch_bitmask import (
     NaiveBitmaskTensor,
-    BitmaskTensor,
+    CppBitmaskTensor,
     TritonBitmaskTensor,
     NumpyBitmaskTensor,
 )
 
 IMPLS_TO_TEST = [
     NaiveBitmaskTensor,
-    BitmaskTensor,
+    CppBitmaskTensor,
     TritonBitmaskTensor,
     NumpyBitmaskTensor,
 ]

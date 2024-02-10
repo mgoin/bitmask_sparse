@@ -9,10 +9,10 @@ __all__ = [
 class NumpyBitmaskTensor:
     def __init__(self, tensor: torch.Tensor):
         self.shape = tensor.shape
-        self.bitmask_packed, self.values = bitmask_compress(tensor)
+        self.values, self.bitmask, self.row_offsets = bitmask_compress(tensor)
 
     def decompress(self) -> torch.Tensor:
-        return bitmask_decompress(self.bitmask_packed, self.values, self.shape)
+        return bitmask_decompress(self.values, self.bitmask, self.shape)
 
     def to_dense(self) -> torch.Tensor:
         return self.decompress()
@@ -25,13 +25,18 @@ class NumpyBitmaskTensor:
         def sizeof_tensor(a):
             return a.element_size() * a.nelement()
 
-        return sizeof_tensor(self.values) + sizeof_tensor(self.bitmask_packed)
+        return (
+            sizeof_tensor(self.values)
+            + sizeof_tensor(self.bitmask)
+            + sizeof_tensor(self.row_offsets)
+        )
 
     def save(self, filepath: str):
         torch.save(
             {
                 "values": self.values,
-                "bitmask_packed": self.bitmask_packed,
+                "bitmask": self.bitmask,
+                "row_offsets": self.row_offsets,
                 "shape": self.shape,
             },
             filepath,
@@ -44,7 +49,8 @@ class NumpyBitmaskTensor:
             torch.zeros(data["shape"])
         )  # Dummy tensor for initialization
         instance.values = data["values"]
-        instance.bitmask_packed = data["bitmask_packed"]
+        instance.bitmask = data["bitmask"]
+        instance.row_offsets = data["row_offsets"]
         instance.shape = data["shape"]
         return instance
 
@@ -83,13 +89,14 @@ def unpack_bitmask(packed_bitmask, original_shape):
 
 def bitmask_compress(tensor):
     bitmask = tensor != 0
+    row_offsets = bitmask.sum(dim=-1).cumsum(dim=0)
     values = tensor[bitmask]
     bitmask_packed = pack_bitmask(bitmask)
 
-    return bitmask_packed, values
+    return values, bitmask_packed, row_offsets
 
 
-def bitmask_decompress(bitmask, values, original_shape):
+def bitmask_decompress(values, bitmask, original_shape):
     bitmask_unpacked = unpack_bitmask(bitmask, original_shape)
 
     decompressed_tensor = torch.zeros(original_shape, dtype=values.dtype)

@@ -13,11 +13,11 @@ bitmask_lib = load(
 
 
 __all__ = [
-    "BitmaskTensor",
+    "CppBitmaskTensor",
 ]
 
 
-class BitmaskTensor:
+class CppBitmaskTensor:
     def __init__(self, tensor: torch.Tensor):
         self.shape = tensor.shape
         self.values, self.bitmask_packed = bitmask_sparse_compression(tensor)
@@ -29,8 +29,8 @@ class BitmaskTensor:
         return self.decompress()
 
     @staticmethod
-    def from_dense(tensor: torch.Tensor) -> "BitmaskTensor":
-        return BitmaskTensor(tensor)
+    def from_dense(tensor: torch.Tensor) -> "CppBitmaskTensor":
+        return CppBitmaskTensor(tensor)
 
     def curr_memory_size_bytes(self):
         def sizeof_tensor(a):
@@ -49,9 +49,9 @@ class BitmaskTensor:
         )
 
     @staticmethod
-    def load(filepath: str) -> "BitmaskTensor":
+    def load(filepath: str) -> "CppBitmaskTensor":
         data = torch.load(filepath)
-        instance = BitmaskTensor(
+        instance = CppBitmaskTensor(
             torch.zeros(data["shape"])
         )  # Dummy tensor for initialization
         instance.values = data["values"]
@@ -60,7 +60,7 @@ class BitmaskTensor:
         return instance
 
     def __repr__(self):
-        return f"BitmaskTensor(shape={self.shape}, compressed=True)"
+        return f"CppBitmaskTensor(shape={self.shape}, compressed=True)"
 
 
 def bitmask_sparse_compression(tensor: torch.Tensor) -> tuple:
