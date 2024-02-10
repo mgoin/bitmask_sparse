@@ -8,6 +8,7 @@ SCRIPT_DIR = os.path.dirname(os.path.realpath(__file__))
 bitmask_lib = load(
     name="bitmask_lib",
     sources=[f"{SCRIPT_DIR}/bitmask_sparse_extension.cpp"],
+    extra_cflags=["-O2"],
 )
 
 

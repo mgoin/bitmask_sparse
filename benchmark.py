@@ -1,67 +1,66 @@
+import time
 import timeit
 import torch
 
-from naive_bitmask import NaiveBitmaskTensor
-from triton_bitmask import TritonBitmaskTensor
-from bitmask import BitmaskTensor
+from torch_bitmask import (
+    NaiveBitmaskTensor,
+    TritonBitmaskTensor,
+    BitmaskTensor,
+    NumpyBitmaskTensor,
+)
 
-SHAPE = [1024, 1024]
+tensor_impls = [NumpyBitmaskTensor, TritonBitmaskTensor]
+shape = [16 * 1024, 4 * 1024]
+dtype = torch.float32
+sparsity = 0.5
 
-
-def create_naive_bitmask_tensor():
-    dense_tensor = torch.randn(SHAPE)
-    _ = NaiveBitmaskTensor.from_dense(dense_tensor)
-
-
-def decompress_naive_bitmask_tensor():
-    dense_tensor = torch.randn(SHAPE)
-    naive_bitmask_tensor = NaiveBitmaskTensor.from_dense(dense_tensor)
-    _ = naive_bitmask_tensor.to_dense()
+dense_tensor = torch.rand(shape, dtype=dtype)
+print(
+    f"Generating a tensor of size={shape} and precision={dtype} with sparsity={sparsity}"
+)
+mask = (dense_tensor.abs() < (1 - sparsity)).int()
+dense_tensor = dense_tensor * mask
 
 
 def create_regular_tensor():
-    _ = torch.randn(SHAPE)
+    _ = torch.rand(shape)
 
 
-def create_bitmask_tensor():
-    dense_tensor = torch.randn(SHAPE)
-    _ = BitmaskTensor.from_dense(dense_tensor)
+def compress_tensor_impl(input_tensor, tensor_impl):
+    return tensor_impl.from_dense(input_tensor)
 
 
-def decompress_bitmask_tensor():
-    dense_tensor = torch.randn(SHAPE)
-    bitmask_tensor = BitmaskTensor.from_dense(dense_tensor)
-    _ = bitmask_tensor.to_dense()
+def decompress_tensor_impl(compressed_tensor):
+    return compressed_tensor.to_dense()
 
 
-def create_trition_bitmask_tensor():
-    dense_tensor = torch.randn(SHAPE)
-    _ = TritonBitmaskTensor.from_dense(dense_tensor)
+def benchmark_implementation(input_tensor, tensor_impl, iters=10):
+    # Warmup
+    compressed_tensor = compress_tensor_impl(input_tensor, tensor_impl)
+    decompress_tensor_impl(compressed_tensor)
 
+    # Measure compression time
+    start = time.perf_counter()
+    for i in range(iters):
+        compress_tensor_impl(input_tensor, tensor_impl)
+    compress_duration = (time.perf_counter() - start) / iters
 
-def decompress_trition_bitmask_tensor():
-    dense_tensor = torch.randn(SHAPE)
-    bitmask_tensor = TritonBitmaskTensor.from_dense(dense_tensor)
-    _ = bitmask_tensor.to_dense()
+    # Measure decompression time
+    start = time.perf_counter()
+    for i in range(iters):
+        decompress_tensor_impl(compressed_tensor)
+    decompress_duration = (time.perf_counter() - start) / iters
+
+    return compress_duration, decompress_duration
 
 
 # Benchmarking
-print(f"SHAPE = {SHAPE}")
-# print(
-#     "Create NaiveBitmaskTensor:", timeit.timeit(create_naive_bitmask_tensor, number=10)
-# )
-# print(
-#     "Decompress NaiveBitmaskTensor:",
-#     timeit.timeit(decompress_naive_bitmask_tensor, number=10),
-# )
-print("Create Regular Tensor:", timeit.timeit(create_regular_tensor, number=10))
-print("Create BitmaskTensor:", timeit.timeit(create_bitmask_tensor, number=10))
-print("Decompress BitmaskTensor:", timeit.timeit(decompress_bitmask_tensor, number=10))
-print(
-    "Create TritonBitmaskTensor:",
-    timeit.timeit(create_trition_bitmask_tensor, number=10),
-)
-print(
-    "Decompress TritonBitmaskTensor:",
-    timeit.timeit(decompress_trition_bitmask_tensor, number=10),
-)
+print(f"Create Regular Tensor: {timeit.timeit(create_regular_tensor, number=10):.4f}s")
+
+for impl in tensor_impls:
+    print(f"Benchmark {impl.__name__}:")
+    compress_duration, decompress_duration = benchmark_implementation(
+        dense_tensor, impl
+    )
+    print(f"  compress:   {compress_duration:.4f}s")
+    print(f"  decompress: {decompress_duration:.4f}s")
