@@ -10,7 +10,7 @@ from torch_bitmask import (
 )
 
 tensor_impls = [NumpyBitmaskTensor, TritonBitmaskTensor]
-shape = [16 * 1024, 4 * 1024]
+shape = [16 * 1024, 16 * 1024]
 dtype = torch.float32
 sparsity = 0.5
 

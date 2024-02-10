@@ -89,7 +89,8 @@ def unpack_bitmask(packed_bitmask, original_shape):
 
 def bitmask_compress(tensor):
     bitmask = tensor != 0
-    row_offsets = bitmask.sum(dim=-1).cumsum(dim=0)
+    row_counts = bitmask.sum(dim=-1)
+    row_offsets = torch.cumsum(row_counts, 0) - row_counts
     values = tensor[bitmask]
     bitmask_packed = pack_bitmask(bitmask)
 

@@ -155,7 +155,7 @@ class TritonBitmaskTensor:
     def __init__(self, tensor: torch.Tensor):
         self.device = tensor.device
         self.shape = tensor.shape
-        tensor_2d = tensor.contiguous().view(-1, self.shape[-1])
+        tensor_2d = tensor.contiguous().view(-1, self.shape[-1]).cuda()
 
         # Use a triton kernel to simultaneously compute the bitmasks for each row along with
         # with the number of non-zeros in each row
