@@ -10,11 +10,11 @@ from torch_bitmask import (
 )
 
 tensor_impls = [NumpyBitmaskTensor, TritonBitmaskTensor]
-shape = [16 * 1024, 16 * 1024]
+shape = [16 * 1024, 4 * 1024]
 dtype = torch.float32
 sparsity = 0.5
 
-dense_tensor = torch.rand(shape, dtype=dtype)
+dense_tensor = torch.rand(shape).to(dtype)
 print(
     f"Generating a tensor of size={shape} and precision={dtype} with sparsity={sparsity}"
 )
@@ -23,7 +23,7 @@ dense_tensor = dense_tensor * mask
 
 
 def create_regular_tensor():
-    _ = torch.rand(shape)
+    _ = torch.rand(shape).to(dtype)
 
 
 def compress_tensor_impl(input_tensor, tensor_impl):
