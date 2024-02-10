@@ -33,8 +33,7 @@ def test_compress_decompress_identity(implementation):
 @pytest.mark.parametrize("implementation", IMPLS_TO_TEST)
 def test_compress_efficiency(implementation):
     # Create a larger, mostly sparse tensor
-    tensor = torch.cat([torch.zeros(100, 100), torch.rand(100, 100)], dim=0)
-    tensor[:100, :] = tensor[:100, :].apply_(lambda x: x if x > 0.95 else 0.0)
+    tensor = torch.rand(100, 100).apply_(lambda x: x if x > 0.95 else 0.0)
 
     def sizeof_tensor(a):
         return a.element_size() * a.nelement()
@@ -45,7 +44,7 @@ def test_compress_efficiency(implementation):
     # Check that compression actually reduces size
     original_size = sizeof_tensor(tensor)
     compressed_size = compressed_tensor.curr_memory_size_bytes()
-    assert compressed_size < original_size, "Compression should reduce total size."
+    assert compressed_size < original_size / 4
 
 
 @pytest.mark.parametrize("implementation", IMPLS_TO_TEST)
