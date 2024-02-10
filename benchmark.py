@@ -58,7 +58,7 @@ def benchmark_implementation(input_tensor, tensor_impl, iters=10):
 # Benchmarking
 print(f"Create Regular Tensor: {timeit.timeit(create_regular_tensor, number=10):.4f}s")
 print(
-    f"Dense memory used: {dense_tensor.element_size() * dense_tensor.nelement() / 1024 / 1024:.4f} MB"
+    f"Dense memory used: {dense_tensor.element_size() * dense_tensor.nelement() / 1024**2:.4f} MB"
 )
 print()
 
@@ -71,5 +71,5 @@ for impl in tensor_impls:
     ) = benchmark_implementation(dense_tensor, impl)
     print(f"  compress:   {compress_duration:.4f} sec")
     print(f"  decompress: {decompress_duration:.4f} sec")
-    print(f"  memory used: {compressed_size_bytes / 1024 / 1024:.4f} MB")
+    print(f"  memory used: {compressed_size_bytes / 1024**2:.4f} MB")
     print()
