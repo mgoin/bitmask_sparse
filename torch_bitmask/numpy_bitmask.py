@@ -61,10 +61,21 @@ def pack_bitmask(bitmask):
 
 
 def unpack_bitmask(packed_bitmask, original_shape):
-    unpacked_array = numpy.unpackbits(packed_bitmask.numpy())[
-        : packed_bitmask.numel() * 8
-    ]
-    unpacked_array = unpacked_array.reshape(original_shape)
+    # Calculate the total number of bits needed for the original shape
+    total_bits_needed = numpy.prod(original_shape)
+
+    # Unpack the bits and trim or pad the array to match the total_bits_needed
+    unpacked_bits = numpy.unpackbits(packed_bitmask.numpy())
+    unpacked_bits_trimmed_padded = (
+        unpacked_bits[:total_bits_needed]
+        if unpacked_bits.size >= total_bits_needed
+        else numpy.pad(
+            unpacked_bits, (0, total_bits_needed - unpacked_bits.size), "constant"
+        )
+    )
+
+    # Reshape to match the original shape
+    unpacked_array = unpacked_bits_trimmed_padded.reshape(original_shape)
     unpacked_torch = torch.from_numpy(unpacked_array.astype(bool))
 
     return unpacked_torch
