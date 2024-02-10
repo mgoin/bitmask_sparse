@@ -37,6 +37,7 @@ def decompress_tensor_impl(compressed_tensor):
 def benchmark_implementation(input_tensor, tensor_impl, iters=10):
     # Warmup
     compressed_tensor = compress_tensor_impl(input_tensor, tensor_impl)
+    compressed_size_bytes = compressed_tensor.curr_memory_size_bytes()
     decompress_tensor_impl(compressed_tensor)
 
     # Measure compression time
@@ -51,16 +52,24 @@ def benchmark_implementation(input_tensor, tensor_impl, iters=10):
         decompress_tensor_impl(compressed_tensor)
     decompress_duration = (time.perf_counter() - start) / iters
 
-    return compress_duration, decompress_duration
+    return compress_duration, decompress_duration, compressed_size_bytes
 
 
 # Benchmarking
 print(f"Create Regular Tensor: {timeit.timeit(create_regular_tensor, number=10):.4f}s")
+print(
+    f"Dense memory used: {dense_tensor.element_size() * dense_tensor.nelement() / 1024 / 1024:.4f} MB"
+)
+print()
 
 for impl in tensor_impls:
     print(f"Benchmark {impl.__name__}:")
-    compress_duration, decompress_duration = benchmark_implementation(
-        dense_tensor, impl
-    )
-    print(f"  compress:   {compress_duration:.4f}s")
-    print(f"  decompress: {decompress_duration:.4f}s")
+    (
+        compress_duration,
+        decompress_duration,
+        compressed_size_bytes,
+    ) = benchmark_implementation(dense_tensor, impl)
+    print(f"  compress:   {compress_duration:.4f} sec")
+    print(f"  decompress: {decompress_duration:.4f} sec")
+    print(f"  memory used: {compressed_size_bytes / 1024 / 1024:.4f} MB")
+    print()

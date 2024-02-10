@@ -51,6 +51,7 @@ class NumpyBitmaskTensor:
     def __repr__(self):
         return f"NumpyBitmaskTensor(shape={self.shape}, compressed=True)"
 
+
 def pack_bitmask(bitmask):
     bitmask_numpy = bitmask.numpy()
     packed_bits_numpy = numpy.packbits(bitmask_numpy)
@@ -60,7 +61,9 @@ def pack_bitmask(bitmask):
 
 
 def unpack_bitmask(packed_bitmask, original_shape):
-    unpacked_array = numpy.unpackbits(packed_bitmask.numpy())[:packed_bitmask.numel() * 8]
+    unpacked_array = numpy.unpackbits(packed_bitmask.numpy())[
+        : packed_bitmask.numel() * 8
+    ]
     unpacked_array = unpacked_array.reshape(original_shape)
     unpacked_torch = torch.from_numpy(unpacked_array.astype(bool))
 
