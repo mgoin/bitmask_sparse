@@ -22,7 +22,7 @@ def sizeof_tensor(a):
 print(f"dense_tensor: {sizeof_tensor(dense_tensor) / 1024**2:.4f} MB\n")
 print(f"bitmask_tensor: {bitmask_tensor.curr_memory_size_bytes() / 1024**2:.4f} MB")
 print(f"  values: {sizeof_tensor(bitmask_tensor.values) / 1024**2:.4f} MB")
-print(f"  bitmask: {sizeof_tensor(bitmask_tensor.bitmask) / 1024**2:.4f} MB")
+print(f"  bitmasks: {sizeof_tensor(bitmask_tensor.bitmasks) / 1024**2:.4f} MB")
 print(f"  row_offsets: {sizeof_tensor(bitmask_tensor.row_offsets) / 1024**2:.4f} MB")
 
 assert torch.equal(sparse_tensor, bitmask_tensor.to_dense())
