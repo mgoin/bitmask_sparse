@@ -134,10 +134,10 @@ def triton_bitmask_decompress_kernel(
         tl.store(row_output_start_ptr + col_offsets, values, mask=col_offsets < n_cols)
 
 
-def triton_bitmask_decompress(bitmasks, row_offsets, values, n_cols):
+def triton_bitmask_decompress(bitmasks, row_offsets, values, shape):
     values_cuda = values.cuda()
 
-    n_rows, _ = bitmasks.shape
+    n_rows, n_cols = shape
     output = torch.empty(n_rows, n_cols, dtype=values.dtype, device=values_cuda.device)
 
     triton_bitmask_decompress_kernel[(n_rows,)](
@@ -171,7 +171,7 @@ class TritonBitmaskTensor:
     def decompress(self) -> torch.Tensor:
         return (
             triton_bitmask_decompress(
-                self.bitmasks, self.row_offsets, self.values, self.shape[-1]
+                self.bitmasks, self.row_offsets, self.values, self.shape
             )
             .view(self.shape)
             .to(device=self.device)

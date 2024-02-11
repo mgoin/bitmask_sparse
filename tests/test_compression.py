@@ -33,7 +33,7 @@ def test_compress_decompress_identity(implementation):
 @pytest.mark.parametrize("implementation", IMPLS_TO_TEST)
 def test_compress_efficiency(implementation):
     # Create a larger, mostly sparse tensor
-    tensor = torch.rand(100, 100).apply_(lambda x: x if x > 0.95 else 0.0)
+    tensor = torch.rand(100, 100).apply_(lambda x: x if x > 0.9 else 0.0)
 
     def sizeof_tensor(a):
         return a.element_size() * a.nelement()
@@ -52,7 +52,7 @@ def test_compress_efficiency(implementation):
 @pytest.mark.parametrize("size", [(1, 16), (10, 10), (15, 15), (100, 100), (300, 300)])
 def test_size_invariance(implementation, sparsity, size):
     # Create a random tensor of specified size
-    tensor = torch.randn(size) < sparsity
+    tensor = torch.rand(size).apply_(lambda x: x if x > sparsity else 0.0)
 
     # Compress the tensor
     compressed_tensor = implementation.from_dense(tensor)
