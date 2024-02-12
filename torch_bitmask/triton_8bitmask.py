@@ -43,7 +43,10 @@ def triton_compute_bitmasks_and_rowcounts_kernel(
         col_base_offset = col_block_idx * BLOCK_SIZE + i * 8
 
         # Calculate pointers to the input elements for this chunk.
-        col_bit_indices = tl.arange(0, 8)
+        # For big-endian, we need to reverse the order in which we consider bits.
+        # This can be done by reversing the bit indices for mask calculation.
+        little_col_bit_indices = tl.arange(0, 8)
+        col_bit_indices = 8 - little_col_bit_indices
         col_offsets = col_bit_indices + col_base_offset
         input_ptrs = row_start_ptr + col_offsets
 
@@ -108,12 +111,15 @@ def triton_bitmask_decompress_kernel(
         # Load the 8-bit bitmask segment.
         bitmask = tl.load(row_bitmasks_start_ptr + i)
 
-        # Generate a sequence of 8 indices (0 to 7) for the bitmask.
-        col_bit_indices = tl.arange(0, 8)
+        # For big-endian, we need to reverse the order in which we consider bits.
+        # This can be done by reversing the bit indices for mask calculation.
+        little_col_bit_indices = tl.arange(0, 8)
+        col_bit_indices = 8 - little_col_bit_indices
 
-        # Generate masks for extracting values based on the bitmask.
+        # Generate masks for extracting values based on the bitmask, adjusted for big-endian.
         col_idx_bit_mask = (1 << col_bit_indices).to(tl.uint32, bitcast=True)
-        col_low_bits_mask = col_idx_bit_mask - 1
+        col_low_bits_mask = ((1 << col_bit_indices) - 1).to(tl.uint32, bitcast=True)
+        # col_low_bits_mask = col_idx_bit_mask - 1
 
         # Convert masks to int32 for compatibility.
         col_idx_bit_mask = col_idx_bit_mask.to(tl.int32, bitcast=True)
@@ -137,7 +143,7 @@ def triton_bitmask_decompress_kernel(
         curr_vals_ptr += num_non_zeros
 
         # Calculate the column offsets for this segment and store the values in the output tensor.
-        col_offsets = col_base + col_bit_indices
+        col_offsets = col_base + little_col_bit_indices
         tl.store(row_output_start_ptr + col_offsets, values, mask=col_offsets < n_cols)
 
 

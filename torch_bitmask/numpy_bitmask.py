@@ -59,7 +59,7 @@ class NumpyBitmaskTensor:
 
 
 def pack_bitmasks(bitmasks: torch.Tensor) -> torch.Tensor:
-    packed_bits_numpy = numpy.packbits(bitmasks.numpy(), axis=-1, bitorder="little")
+    packed_bits_numpy = numpy.packbits(bitmasks.numpy(), axis=-1)
     packed_bits_torch = torch.from_numpy(packed_bits_numpy)
 
     return packed_bits_torch
@@ -73,7 +73,7 @@ def unpack_bitmasks(
 
     # Unpack the bits and trim or pad the array to match the total_bits_needed
     unpacked_bits = numpy.unpackbits(
-        packed_bitmasks.numpy(), axis=-1, count=original_shape[-1], bitorder="little"
+        packed_bitmasks.numpy(), axis=-1, count=original_shape[-1]
     )
     unpacked_bits_trimmed_padded = (
         unpacked_bits[:total_bits_needed]
