@@ -3,13 +3,14 @@ import timeit
 import torch
 
 from torch_bitmask import (
-    NaiveBitmaskTensor,
-    TritonBitmaskTensor,
     CppBitmaskTensor,
+    NaiveBitmaskTensor,
     NumpyBitmaskTensor,
+    TritonBitmaskTensor,
+    Triton8BitmaskTensor,
 )
 
-tensor_impls = [NumpyBitmaskTensor, TritonBitmaskTensor]
+tensor_impls = [NumpyBitmaskTensor, TritonBitmaskTensor, Triton8BitmaskTensor]
 shape = [16 * 1024, 4 * 1024]
 dtype = torch.float32
 sparsity = 0.5

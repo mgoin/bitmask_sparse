@@ -3,7 +3,7 @@ import triton
 import triton.language as tl
 
 __all__ = [
-    "TritonBitmaskTensor",
+    "Triton8BitmaskTensor",
 ]
 
 
@@ -25,7 +25,7 @@ def triton_compute_bitmasks_and_rowcounts_kernel(
     # Compute the row index and the block index for columns based on the program's ID.
     row_idx = tl.program_id(0)
     col_block_idx = tl.program_id(1)
-    bitmasks_per_block = tl.cdiv(BLOCK_SIZE, 32)
+    bitmasks_per_block = tl.cdiv(BLOCK_SIZE, 8)
 
     # Calculate starting pointers for the current row in both the input and bitmask tensors.
     row_start_ptr = input_ptr + row_idx * input_row_stride
@@ -38,12 +38,12 @@ def triton_compute_bitmasks_and_rowcounts_kernel(
     # Initialize the count of non-zero elements found in this row.
     nnz = 0
 
-    # Iterate over each group of 32 columns within the block since we are using int32 for bitmask element.
-    for i in tl.static_range(0, BLOCK_SIZE // 32):
-        col_base_offset = col_block_idx * BLOCK_SIZE + i * 32
+    # Iterate over each group of 8 columns within the block since we are using int32 for bitmask element.
+    for i in tl.static_range(0, BLOCK_SIZE // 8):
+        col_base_offset = col_block_idx * BLOCK_SIZE + i * 8
 
         # Calculate pointers to the input elements for this chunk.
-        col_bit_indices = tl.arange(0, 32)
+        col_bit_indices = tl.arange(0, 8)
         col_offsets = col_bit_indices + col_base_offset
         input_ptrs = row_start_ptr + col_offsets
 
@@ -51,14 +51,14 @@ def triton_compute_bitmasks_and_rowcounts_kernel(
         row = tl.load(input_ptrs, mask=col_offsets < n_cols, other=0)
         row_is_nonzero = row != 0
 
-        # For each non-zero element, set the corresponding bit in a 32-bit integer.
+        # For each non-zero element, set the corresponding bit in a 8-bit integer.
         row_bits = tl.where(row_is_nonzero, 1 << col_bit_indices, 0)
-        # Combine the bits into a single 32-bit integer.
+        # Combine the bits into a single 8-bit integer.
         result = tl.reduce(row_bits, 0, _or_combine)
         # Accumulate the count of non-zero elements.
         nnz += tl.sum(row_is_nonzero)
 
-        # Store the resulting 32-bit integer into the bitmask tensor if within bounds.
+        # Store the resulting 8-bit integer into the bitmask tensor if within bounds.
         if col_base_offset < n_cols:
             tl.store(bitmasks_start_ptr + i, result)
 
@@ -69,11 +69,12 @@ def triton_compute_bitmasks_and_rowcounts_kernel(
 def triton_compute_bitmasks_and_rowcounts(x):
     x_cuda = x.cuda()
     BLOCK_SIZE = 128
+    assert BLOCK_SIZE % 8 == 0
 
     n_rows, n_cols = x.shape
     row_counts = torch.zeros(n_rows, dtype=torch.int32, device=x_cuda.device)
     bitmasks = torch.empty(
-        n_rows, triton.cdiv(n_cols, 32), dtype=torch.int32, device=x_cuda.device
+        n_rows, triton.cdiv(n_cols, 8), dtype=torch.uint8, device=x_cuda.device
     )
     triton_compute_bitmasks_and_rowcounts_kernel[
         (n_rows, triton.cdiv(n_cols, BLOCK_SIZE))
@@ -101,14 +102,14 @@ def triton_bitmask_decompress_kernel(
     row_bitmasks_start_ptr = bitmasks_ptr + row_idx * bitmasks_row_stride
     row_output_start_ptr = output_ptr + row_idx * n_cols
 
-    # Iterate through each 32-bit segment of the bitmask for the current row.
-    for i in range(0, tl.cdiv(n_cols, 32)):
-        col_base = i * 32
-        # Load the 32-bit bitmask segment.
+    # Iterate through each 8-bit segment of the bitmask for the current row.
+    for i in range(0, tl.cdiv(n_cols, 8)):
+        col_base = i * 8
+        # Load the 8-bit bitmask segment.
         bitmask = tl.load(row_bitmasks_start_ptr + i)
 
-        # Generate a sequence of 32 indices (0 to 31) for the bitmask.
-        col_bit_indices = tl.arange(0, 32)
+        # Generate a sequence of 8 indices (0 to 7) for the bitmask.
+        col_bit_indices = tl.arange(0, 8)
 
         # Generate masks for extracting values based on the bitmask.
         col_idx_bit_mask = (1 << col_bit_indices).to(tl.uint32, bitcast=True)
@@ -117,8 +118,9 @@ def triton_bitmask_decompress_kernel(
         # Convert masks to int32 for compatibility.
         col_idx_bit_mask = col_idx_bit_mask.to(tl.int32, bitcast=True)
         col_low_bits_mask = col_low_bits_mask.to(tl.int32, bitcast=True)
+        expanded_bitmask = bitmask.to(tl.uint32).to(tl.int32, bitcast=True)
 
-        num_non_zeros = tl.math.popc(bitmask)
+        num_non_zeros = tl.math.popc(expanded_bitmask)
 
         if num_non_zeros > 0:
             # Calculate the offset for each value based on the number of set bits (popcount) in the bitmask up to that point.
@@ -129,7 +131,7 @@ def triton_bitmask_decompress_kernel(
             # Use the bitmask to conditionally select values or zeros.
             values = tl.where((col_idx_bit_mask & bitmask), values, 0)
         else:
-            values = tl.zeros((32,), dtype=values_ptr.dtype.element_ty)
+            values = tl.zeros((8,), dtype=values_ptr.dtype.element_ty)
 
         # Increment the pointer for the next set of values based on the number of non-zero elements in this segment.
         curr_vals_ptr += num_non_zeros
@@ -156,7 +158,7 @@ def triton_bitmask_decompress(bitmasks, row_offsets, values, shape):
     return output
 
 
-class TritonBitmaskTensor:
+class Triton8BitmaskTensor:
     def __init__(self, tensor: torch.Tensor):
         self.device = tensor.device
         self.shape = tensor.shape
@@ -186,8 +188,8 @@ class TritonBitmaskTensor:
         return self.decompress()
 
     @staticmethod
-    def from_dense(tensor: torch.Tensor) -> "TritonBitmaskTensor":
-        return TritonBitmaskTensor(tensor)
+    def from_dense(tensor: torch.Tensor) -> "Triton8BitmaskTensor":
+        return Triton8BitmaskTensor(tensor)
 
     def curr_memory_size_bytes(self):
         def sizeof_tensor(a):
@@ -211,9 +213,9 @@ class TritonBitmaskTensor:
         )
 
     @staticmethod
-    def load(filepath: str) -> "TritonBitmaskTensor":
+    def load(filepath: str) -> "Triton8BitmaskTensor":
         data = torch.load(filepath)
-        instance = TritonBitmaskTensor(
+        instance = Triton8BitmaskTensor(
             torch.zeros(data["shape"])
         )  # Dummy tensor for initialization
         instance.values = data["values"]
@@ -223,4 +225,4 @@ class TritonBitmaskTensor:
         return instance
 
     def __repr__(self):
-        return f"TritonBitmaskTensor(shape={self.shape}, compressed=True)"
+        return f"Triton8BitmaskTensor(shape={self.shape}, compressed=True)"

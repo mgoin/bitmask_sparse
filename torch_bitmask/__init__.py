@@ -1,6 +1,7 @@
 from importlib import import_module
 
-PACKAGE_NAME = 'torch_bitmask'
+PACKAGE_NAME = "torch_bitmask"
+
 
 # Only when the class is accessed will the __getattr__ trigger the actual import
 # of the module and class. This controls when the import side-effects happen,
@@ -20,14 +21,16 @@ class LazyLoader:
 
 
 # Define lazy-loaded classes
-NaiveBitmaskTensor = LazyLoader(".naive_bitmask", "NaiveBitmaskTensor")
 CppBitmaskTensor = LazyLoader(".cpp_bitmask", "CppBitmaskTensor")
-TritonBitmaskTensor = LazyLoader(".triton_bitmask", "TritonBitmaskTensor")
+NaiveBitmaskTensor = LazyLoader(".naive_bitmask", "NaiveBitmaskTensor")
 NumpyBitmaskTensor = LazyLoader(".numpy_bitmask", "NumpyBitmaskTensor")
+TritonBitmaskTensor = LazyLoader(".triton_bitmask", "TritonBitmaskTensor")
+Triton8BitmaskTensor = LazyLoader(".triton_8bitmask", "Triton8BitmaskTensor")
 
 __all__ = [
-    "NaiveBitmaskTensor",
     "CppBitmaskTensor",
-    "TritonBitmaskTensor",
+    "NaiveBitmaskTensor",
     "NumpyBitmaskTensor",
+    "TritonBitmaskTensor",
+    "Triton8BitmaskTensor",
 ]

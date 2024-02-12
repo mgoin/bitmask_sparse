@@ -9,7 +9,7 @@ __all__ = [
 class NumpyBitmaskTensor:
     def __init__(self, tensor: torch.Tensor):
         self.shape = tensor.shape
-        self.values, self.bitmasks, self.row_offsets = bitmask_compress(tensor)
+        self.values, self.bitmasks, self.row_offsets = bitmask_compress(tensor.cpu())
 
     def decompress(self) -> torch.Tensor:
         return bitmask_decompress(self.values, self.bitmasks, self.shape)
@@ -48,9 +48,9 @@ class NumpyBitmaskTensor:
         instance = NumpyBitmaskTensor(
             torch.zeros(data["shape"])
         )  # Dummy tensor for initialization
-        instance.values = data["values"]
-        instance.bitmasks = data["bitmasks"]
-        instance.row_offsets = data["row_offsets"]
+        instance.values = data["values"].cpu()
+        instance.bitmasks = data["bitmasks"].cpu()
+        instance.row_offsets = data["row_offsets"].cpu()
         instance.shape = data["shape"]
         return instance
 
@@ -59,7 +59,7 @@ class NumpyBitmaskTensor:
 
 
 def pack_bitmasks(bitmasks: torch.Tensor) -> torch.Tensor:
-    packed_bits_numpy = numpy.packbits(bitmasks.numpy())
+    packed_bits_numpy = numpy.packbits(bitmasks.numpy(), axis=-1, bitorder="little")
     packed_bits_torch = torch.from_numpy(packed_bits_numpy)
 
     return packed_bits_torch
@@ -72,7 +72,9 @@ def unpack_bitmasks(
     total_bits_needed = numpy.prod(original_shape)
 
     # Unpack the bits and trim or pad the array to match the total_bits_needed
-    unpacked_bits = numpy.unpackbits(packed_bitmasks.numpy())
+    unpacked_bits = numpy.unpackbits(
+        packed_bitmasks.numpy(), axis=-1, count=original_shape[-1], bitorder="little"
+    )
     unpacked_bits_trimmed_padded = (
         unpacked_bits[:total_bits_needed]
         if unpacked_bits.size >= total_bits_needed
@@ -91,21 +93,21 @@ def unpack_bitmasks(
 
 
 def bitmask_compress(tensor: torch.Tensor):
-    bitmask = tensor != 0
-    row_counts = bitmask.sum(dim=-1)
+    bytemasks = tensor != 0
+    row_counts = bytemasks.sum(dim=-1)
     row_offsets = torch.cumsum(row_counts, 0) - row_counts
-    values = tensor[bitmask]
-    bitmask_packed = pack_bitmasks(bitmask)
+    values = tensor[bytemasks]
+    bitmasks_packed = pack_bitmasks(bytemasks)
 
-    return values, bitmask_packed, row_offsets
+    return values, bitmasks_packed, row_offsets
 
 
 def bitmask_decompress(
     values: torch.Tensor, bitmasks: torch.Tensor, original_shape: torch.Size
 ) -> torch.Tensor:
-    bitmasks_unpacked = unpack_bitmasks(bitmasks, original_shape)
+    bytemasks_unpacked = unpack_bitmasks(bitmasks, original_shape)
 
     decompressed_tensor = torch.zeros(original_shape, dtype=values.dtype)
-    decompressed_tensor[bitmasks_unpacked] = values
+    decompressed_tensor[bytemasks_unpacked] = values
 
     return decompressed_tensor
