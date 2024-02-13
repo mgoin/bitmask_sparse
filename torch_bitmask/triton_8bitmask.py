@@ -121,6 +121,7 @@ def triton_bitmask_decompress_kernel(
         expanded_bitmask = bitmask.to(tl.uint32).to(tl.int32, bitcast=True)
 
         num_non_zeros = tl.math.popc(expanded_bitmask)
+        values_dtype = values_ptr.dtype.element_ty
 
         if num_non_zeros > 0:
             # Calculate the offset for each value based on the number of set bits (popcount) in the bitmask up to that point.
@@ -129,9 +130,9 @@ def triton_bitmask_decompress_kernel(
             # Load the values corresponding to non-zero bits in the bitmask.
             values = tl.load(curr_vals_ptr + col_val_offsets)
             # Use the bitmask to conditionally select values or zeros.
-            values = tl.where((col_idx_bit_mask & bitmask), values, 0)
+            values = tl.where((col_idx_bit_mask & bitmask), values, 0).to(values_dtype)
         else:
-            values = tl.zeros((8,), dtype=values_ptr.dtype.element_ty)
+            values = tl.zeros((8,), dtype=values_dtype)
 
         # Increment the pointer for the next set of values based on the number of non-zero elements in this segment.
         curr_vals_ptr += num_non_zeros

@@ -20,6 +20,8 @@ IMPLS_TO_TEST = [
 
 SIZES_TO_TEST = [(1, 16), (16, 1), (10, 10), (15, 15), (100, 100), (300, 300)]
 
+TYPES_TO_TEST = [torch.float32, torch.float16, torch.bfloat16]
+
 
 @pytest.mark.parametrize("implementation", IMPLS_TO_TEST)
 def test_compress_decompress_identity(implementation):
@@ -54,9 +56,10 @@ def test_compress_efficiency(implementation):
 @pytest.mark.parametrize("implementation", IMPLS_TO_TEST)
 @pytest.mark.parametrize("sparsity", [0.5, 0.99])
 @pytest.mark.parametrize("size", SIZES_TO_TEST)
-def test_size_invariance(implementation, sparsity, size):
+@pytest.mark.parametrize("dtype", TYPES_TO_TEST)
+def test_size_invariance(implementation, sparsity, size, dtype):
     # Create a random tensor of specified size
-    tensor = torch.rand(size).apply_(lambda x: x if x > sparsity else 0.0)
+    tensor = torch.rand(size, dtype=dtype).apply_(lambda x: x if x > sparsity else 0)
 
     # Compress the tensor
     compressed_tensor = implementation.from_dense(tensor)
@@ -76,9 +79,10 @@ def test_size_invariance(implementation, sparsity, size):
 @pytest.mark.parametrize("implementation2", [NumpyBitmaskTensor, Triton8BitmaskTensor])
 @pytest.mark.parametrize("sparsity", [0.5])
 @pytest.mark.parametrize("size", SIZES_TO_TEST)
-def test_save_load_compatibility(implementation1, implementation2, sparsity, size):
+@pytest.mark.parametrize("dtype", TYPES_TO_TEST)
+def test_save_load_compatibility(implementation1, implementation2, sparsity, size, dtype):
     # Create a random tensor of specified size
-    tensor = torch.rand(size).apply_(lambda x: x if x > sparsity else 0.0)
+    tensor = torch.rand(size, dtype=dtype).apply_(lambda x: x if x > sparsity else 0)
 
     # Compress the tensor
     compressed1_tensor = implementation1.from_dense(tensor)

@@ -68,26 +68,15 @@ def pack_bitmasks(bitmasks: torch.Tensor) -> torch.Tensor:
 def unpack_bitmasks(
     packed_bitmasks: torch.Tensor, original_shape: torch.Size
 ) -> torch.Tensor:
-    # Calculate the total number of bits needed for the original shape
-    total_bits_needed = numpy.prod(original_shape)
-
-    # Unpack the bits and trim or pad the array to match the total_bits_needed
+    # Unpack the bits
     unpacked_bits = numpy.unpackbits(
         packed_bitmasks.numpy(), axis=-1, count=original_shape[-1], bitorder="little"
     )
-    unpacked_bits_trimmed_padded = (
-        unpacked_bits[:total_bits_needed]
-        if unpacked_bits.size >= total_bits_needed
-        else numpy.pad(
-            unpacked_bits, (0, total_bits_needed - unpacked_bits.size), "constant"
-        )
-    )
 
     # Reshape to match the original shape
-    unpacked_bitmasks = unpacked_bits_trimmed_padded.reshape(original_shape).astype(
-        bool
+    unpacked_bitmasks_torch = torch.from_numpy(
+        unpacked_bits.reshape(original_shape).astype(bool)
     )
-    unpacked_bitmasks_torch = torch.from_numpy(unpacked_bitmasks)
 
     return unpacked_bitmasks_torch
 
